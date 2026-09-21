@@ -806,8 +806,13 @@ def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
     formatter = axis.get_major_formatter()
     if not isinstance(formatter, ScalarFormatter):
         return False
+    
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.
-    return not bool(getattr(formatter, "_scientific", True))
+    if bool(getattr(formatter, "_scientific", True)):
+        limits = formatter._powerlimits
+        magnitude = formatter.orderOfMagnitude
+        return magnitude <= limits[1] or magnitude >= limits[0]
+    return True
 
 
 def _is_label_required(ticks: list | np.ndarray, ticklabels: list) -> bool:
