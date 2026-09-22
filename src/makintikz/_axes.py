@@ -811,7 +811,7 @@ def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
     if bool(getattr(formatter, "_scientific", True)):
         limits = formatter._powerlimits
         magnitude = formatter.orderOfMagnitude
-        return magnitude <= limits[1] or magnitude >= limits[0]
+        return magnitude < limits[1] and magnitude > limits[0]
     return True
 
 
