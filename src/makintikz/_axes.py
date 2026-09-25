@@ -808,11 +808,11 @@ def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
         return False
     
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.
-    if bool(getattr(formatter, "_scientific", True)):
-        limits = formatter._powerlimits
-        magnitude = formatter.orderOfMagnitude
-        return magnitude < limits[1] and magnitude > limits[0]
-    return True
+    return bool(getattr(formatter, "_scientific", True))
+    #     limits = formatter._powerlimits
+    #     magnitude = formatter.orderOfMagnitude
+    #     return magnitude < limits[1] and magnitude > limits[0]
+    # return True
 
 
 def _is_label_required(ticks: list | np.ndarray, ticklabels: list) -> bool:

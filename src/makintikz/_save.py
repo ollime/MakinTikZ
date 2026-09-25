@@ -327,6 +327,10 @@ def _generate_code(data: TikzData, content: list) -> str:
     if coldefs:
         code += "\n".join(coldefs) + "\n\n"
 
+    pgfkeys = _get_pgfkeys(data.current_mpl_axes.yaxis, data.strict)
+    if pgfkeys:
+        code += pgfkeys + "\n\n"
+
     code += "".join(content)
 
     if data.wrap and data.add_axis_environment:
@@ -349,6 +353,21 @@ def _get_color_definitions(data: TikzData) -> list:
     sorted_keys = sorted(data.custom_colors.keys(), key=lambda x: x.lower())
     d = {key: data.custom_colors[key] for key in sorted_keys}
     return [f"\\definecolor{{{name}}}{{{space}}}{{{val}}}" for name, (space, val) in d.items()]
+
+
+def _get_pgfkeys(axes: Axes, strict: bool) -> str:
+    if not strict:
+        return ""
+
+    formatter = axes.get_major_formatter()
+    scientific = bool(getattr(formatter, "_scientific", True))
+
+    # matplotlib ticklabel_format(style="plain") sets _scientific=False.
+    if scientific:
+        limits = formatter._powerlimits
+        #magnitude = formatter.orderOfMagnitude
+        #print(magnitude < limits[1] and magnitude > limits[0])
+        return f"\\pgfkeys{{/pgf/number format/std={limits[0]}:{limits[1]}}}"
 
 
 def _print_pgfplot_libs_message(data: TikzData) -> None:
