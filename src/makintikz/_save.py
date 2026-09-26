@@ -19,6 +19,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.spines import Spine
 from matplotlib.text import Text
+from matplotlib.ticker import ScalarFormatter
 from typing_extensions import NotRequired, Unpack
 
 if TYPE_CHECKING:
@@ -357,7 +358,7 @@ def _get_color_definitions(data: TikzData) -> list:
 
 def _get_pgfkeys(axes: Axes, strict: bool) -> str:
     """Returns pgfkeys for scientific notation limits."""
-    if not strict:
+    if not strict or not isinstance(formatter, ScalarFormatter):
         return ""
     formatter = axes.xaxis.get_major_formatter()
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.

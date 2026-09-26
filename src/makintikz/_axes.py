@@ -809,7 +809,7 @@ def _get_ticks(
             if force_label_required and not data.strict:
                 print(force_label_required)
                 axis_options.append(f"scaled {xy} ticks=false")
-            else:
+            elif limits != None:
                 axis_options.append(f"scale ticks below exponent={limits[0] + 1}")
                 axis_options.append(f"scale ticks above exponent={limits[1] - 1}")
     return axis_options
@@ -1180,4 +1180,6 @@ def _try_f2i(x: float) -> float:
 
 def _get_powerlimits(obj: Axes) -> list[int, int]:
     formatter = obj.xaxis.get_major_formatter()
+    if not isinstance(formatter, ScalarFormatter):
+        return None
     return formatter._powerlimits
