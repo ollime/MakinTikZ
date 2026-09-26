@@ -327,7 +327,7 @@ def _generate_code(data: TikzData, content: list) -> str:
     if coldefs:
         code += "\n".join(coldefs) + "\n\n"
 
-    pgfkeys = _get_pgfkeys(data.current_mpl_axes.yaxis, data.strict)
+    pgfkeys = _get_pgfkeys(data.current_mpl_axes.xaxis, data.strict)
     if pgfkeys:
         code += pgfkeys + "\n\n"
 
@@ -356,14 +356,12 @@ def _get_color_definitions(data: TikzData) -> list:
 
 
 def _get_pgfkeys(axes: Axes, strict: bool) -> str:
+    """Returns pgfkeys for scientific notation limits."""
     if not strict:
         return ""
-
     formatter = axes.get_major_formatter()
-    scientific = bool(getattr(formatter, "_scientific", True))
-
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.
-    if scientific:
+    if bool(getattr(formatter, "_scientific", True)):
         limits = formatter._powerlimits
         #magnitude = formatter.orderOfMagnitude
         #print(magnitude < limits[1] and magnitude > limits[0])

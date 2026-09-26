@@ -444,10 +444,12 @@ class MyAxes:
             # they might not reflect the current state.
             colorbar_ticklabels = colorbar.ax.get_xticklabels()
             colorbar_ticklabels_minor = colorbar.ax.get_xticklabels(minor=True)
-
-            colorbar_styles.extend(_get_ticks(self.data, "x", colorbar_ticks, colorbar_ticklabels))
+            limits = _get_limits(self.obj)
+            colorbar_styles.extend(_get_ticks(self.data, "x", colorbar_ticks,
+                                              colorbar_ticklabels), limits)
             colorbar_styles.extend(
-                _get_ticks(self.data, "minor x", colorbar_ticks_minor, colorbar_ticklabels_minor)
+                _get_ticks(self.data, "minor x", colorbar_ticks_minor,
+                           colorbar_ticklabels_minor, limits)
             )
             # Horizontal colorbar label is on the x-axis
             colorbar_xlabel = colorbar.ax.get_xlabel()
@@ -533,6 +535,10 @@ class MyAxes:
         force_x_ticklabels = _uses_plain_scalar_tick_format(self.obj, "x")
         force_y_ticklabels = _uses_plain_scalar_tick_format(self.obj, "y")
 
+        # Limits for plain notation. If the exponent (order of magnitude) of the ticks
+        # are below the lower limit or above the upper limit, then uses sci notation.
+        limits = _get_limits(self.obj)
+
         self.data.current_axis_options.update(
             _get_ticks(
                 self.data,
@@ -540,6 +546,7 @@ class MyAxes:
                 self.obj.get_xticks(),
                 self.obj.get_xticklabels(),
                 force_label_required=force_x_ticklabels,
+                limits=limits
             )
         )
         self.data.current_axis_options.update(
@@ -549,6 +556,7 @@ class MyAxes:
                 self.obj.get_yticks(),
                 self.obj.get_yticklabels(),
                 force_label_required=force_y_ticklabels,
+                limits=limits
             )
         )
         self.data.current_axis_options.update(
@@ -557,6 +565,7 @@ class MyAxes:
                 "minor x",
                 self.obj.get_xticks(minor=True),
                 self.obj.get_xticklabels(minor=True),
+                limits=limits
             )
         )
         self.data.current_axis_options.update(
@@ -565,6 +574,7 @@ class MyAxes:
                 "minor y",
                 self.obj.get_yticks(minor=True),
                 self.obj.get_yticklabels(minor=True),
+                limits=limits
             )
         )
 
@@ -757,6 +767,7 @@ def _get_ticks(
     ticklabels: list,
     *,
     force_label_required: bool = False,
+    limits: tuple[int, int]
 ) -> list[str]:
     """Gets a {'x','y'}, a number of ticks and ticks labels.
 
@@ -796,7 +807,11 @@ def _get_ticks(
             # Keep plain scalar tick formatting from matplotlib by disabling
             # PGFPlots' tick scaling multiplier (e.g., "x 10^10" label).
             if force_label_required:
+                print(force_label_required)
                 axis_options.append(f"scaled {xy} ticks=false")
+            else:
+                axis_options.append(f"scale ticks below exponent={limits[0] + 1}")
+                axis_options.append(f"scale ticks above exponent={limits[1] - 1}")
     return axis_options
 
 
@@ -806,14 +821,8 @@ def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
     formatter = axis.get_major_formatter()
     if not isinstance(formatter, ScalarFormatter):
         return False
-    
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.
     return bool(getattr(formatter, "_scientific", True))
-    #     limits = formatter._powerlimits
-    #     magnitude = formatter.orderOfMagnitude
-    #     return magnitude < limits[1] and magnitude > limits[0]
-    # return True
-
 
 def _is_label_required(ticks: list | np.ndarray, ticklabels: list) -> bool:
     """Check if the label is necessary.
@@ -1168,3 +1177,7 @@ def _try_f2i(x: float) -> float:
     printed as such  by pgfplots).
     """
     return int(x) if int(x) == x else x
+
+def _get_limits(obj: Axes) -> tuple[int, int]:
+    formatter = obj.xaxis.get_major_formatter()
+    return formatter._powerlimits
