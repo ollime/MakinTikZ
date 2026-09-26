@@ -444,7 +444,7 @@ class MyAxes:
             # they might not reflect the current state.
             colorbar_ticklabels = colorbar.ax.get_xticklabels()
             colorbar_ticklabels_minor = colorbar.ax.get_xticklabels(minor=True)
-            limits = _get_limits(self.obj)
+            limits = _get_powerlimits(self.obj)
             colorbar_styles.extend(_get_ticks(self.data, "x", colorbar_ticks,
                                               colorbar_ticklabels), limits)
             colorbar_styles.extend(
@@ -537,7 +537,7 @@ class MyAxes:
 
         # Limits for plain notation. If the exponent (order of magnitude) of the ticks
         # are below the lower limit or above the upper limit, then uses sci notation.
-        limits = _get_limits(self.obj)
+        limits = _get_powerlimits(self.obj)
 
         self.data.current_axis_options.update(
             _get_ticks(
@@ -767,7 +767,7 @@ def _get_ticks(
     ticklabels: list,
     *,
     force_label_required: bool = False,
-    limits: tuple[int, int]
+    limits: list[int, int]
 ) -> list[str]:
     """Gets a {'x','y'}, a number of ticks and ticks labels.
 
@@ -1178,6 +1178,6 @@ def _try_f2i(x: float) -> float:
     """
     return int(x) if int(x) == x else x
 
-def _get_limits(obj: Axes) -> tuple[int, int]:
+def _get_powerlimits(obj: Axes) -> list[int, int]:
     formatter = obj.xaxis.get_major_formatter()
     return formatter._powerlimits
