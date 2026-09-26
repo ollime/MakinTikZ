@@ -806,7 +806,7 @@ def _get_ticks(
             axis_options.append(f"{xy}ticklabels={{{sep[0]}{string}{sep[2]}}}")
             # Keep plain scalar tick formatting from matplotlib by disabling
             # PGFPlots' tick scaling multiplier (e.g., "x 10^10" label).
-            if force_label_required:
+            if force_label_required and not data.strict:
                 print(force_label_required)
                 axis_options.append(f"scaled {xy} ticks=false")
             else:
