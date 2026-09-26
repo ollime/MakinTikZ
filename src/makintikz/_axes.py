@@ -822,7 +822,7 @@ def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
     if not isinstance(formatter, ScalarFormatter):
         return False
     # matplotlib ticklabel_format(style="plain") sets _scientific=False.
-    return bool(getattr(formatter, "_scientific", True))
+    return not bool(getattr(formatter, "_scientific", True))
 
 def _is_label_required(ticks: list | np.ndarray, ticklabels: list) -> bool:
     """Check if the label is necessary.
