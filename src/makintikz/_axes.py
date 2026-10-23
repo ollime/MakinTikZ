@@ -463,7 +463,10 @@ class MyAxes:
 
     def _set_axis_line_styles(self) -> None:
         # Assume that the bottom edge color is the color of the entire box.
-        axcol = self.obj.spines["bottom"].get_edgecolor()
+        if hasattr(self.obj.spines, "bottom"):
+            axcol = self.obj.spines["bottom"].get_edgecolor()
+        else:
+            axcol = self.obj.spines["polar"].get_edgecolor()
         col, _ = _color.mpl_color2xcolor(self.data, axcol)
         if col != "black":
             self.data.current_axis_options.add(f"axis line style={{{col}}}")
