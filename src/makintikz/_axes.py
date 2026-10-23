@@ -13,6 +13,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
 from matplotlib.ticker import ScalarFormatter
 from mpl_toolkits.axes_grid1.mpl_axes import Axes as AxesGrid
+from matplotlib.projections import PolarAxes
 
 from . import _color
 from ._util import _common_texification
@@ -149,12 +150,17 @@ class MyAxes:
         self.nsubplots = 1
         self.subplot_index = 0
         self.is_subplot = False
+        self.is_polar = False
 
         if isinstance(obj, Subplot):
             self._subplot()
 
         if isinstance(obj, AxesGrid):
             self._set_axes_grid()
+
+        print(isinstance(obj, PolarAxes))
+        if isinstance(obj, PolarAxes):
+            self._polar()
 
         data.current_axis_options = set()  # Reset axis options
 
@@ -267,6 +273,10 @@ class MyAxes:
         ylim = list(self.obj.get_ylim())
         ylim0, ylim1 = sorted(ylim)
         # Sort the limits so make sure that the smaller of the two is actually *min.
+        if self.is_polar:
+            xlim0 = np.degrees(xlim0)
+            xlim1 = np.degrees(xlim1)
+
         self.data.current_axis_options.add(f"xmin={xlim0:{ff}}, xmax={xlim1:{ff}}")
         self.data.current_axis_options.add(f"ymin={ylim0:{ff}}, ymax={ylim1:{ff}}")
         # When the axis is inverted add additional option
@@ -461,6 +471,10 @@ class MyAxes:
             self.data.is_in_groupplot_env = True
             self.data.pgfplots_libs.add("groupplots")
 
+    def _polar(self) -> None:
+        self.is_polar = True
+        self.data.pgfplots_libs.add("polaraxis")
+
     def _set_axis_line_styles(self) -> None:
         # Assume that the bottom edge color is the color of the entire box.
         if hasattr(self.obj.spines, "bottom"):
@@ -576,6 +590,8 @@ class MyAxes:
     def _content_end(self) -> None:
         if self.is_subplot:
             self.content.append("\n\\nextgroupplot")
+        elif self.is_polar:
+            self.content.append(self.data.flavor.start("polaraxis"))
         else:
             self.content.append(self.data.flavor.start("axis"))
 
@@ -596,7 +612,11 @@ class MyAxes:
 
     def get_end_code(self) -> str:
         if not self.is_subplot:
-            return self.data.flavor.end("axis") + "\n\n"
+            if self.is_polar:
+                return self.data.flavor.end("polaraxis") + "\n\n"
+            else:
+                return self.data.flavor.end("axis") + "\n\n"
+            
         if self.is_subplot and self.nsubplots == self.subplot_index:
             self.data.is_in_groupplot_env = False
             return self.data.flavor.end("groupplot") + "\n\n"
@@ -616,7 +636,7 @@ class MyAxes:
         self.data.current_axis_options.update(
             _get_ticks(
                 self.data,
-                "x",
+                "x" + (" polar" if self.is_polar else ""),
                 self.obj.get_xticks(),
                 self.obj.get_xticklabels(),
                 force_label_required=force_x_ticklabels,
@@ -625,7 +645,7 @@ class MyAxes:
         self.data.current_axis_options.update(
             _get_ticks(
                 self.data,
-                "y",
+                "y" + (" polar" if self.is_polar else ""),
                 self.obj.get_yticks(),
                 self.obj.get_yticklabels(),
                 force_label_required=force_y_ticklabels,
@@ -634,7 +654,7 @@ class MyAxes:
         self.data.current_axis_options.update(
             _get_ticks(
                 self.data,
-                "minor x",
+                "minor x" + (" polar" if self.is_polar else ""),
                 self.obj.get_xticks(minor=True),
                 self.obj.get_xticklabels(minor=True),
             )
@@ -642,7 +662,7 @@ class MyAxes:
         self.data.current_axis_options.update(
             _get_ticks(
                 self.data,
-                "minor y",
+                "minor y" + (" polar" if self.is_polar else ""),
                 self.obj.get_yticks(minor=True),
                 self.obj.get_yticklabels(minor=True),
             )
@@ -925,6 +945,11 @@ def _get_ticks(
         force_label_required or _is_label_required(ticks, ticklabels)
     )
     pgfplots_ticklabels = _get_pgfplots_ticklabels(ticklabels)
+
+    is_polar = "polar" in xy
+    if is_polar:
+        ticks = [np.degrees(t) for t in ticks]
+    xy = xy.replace(" polar", "")
 
     # PGFPlots does not support custom labels for minor ticks (e.g., "minor xticklabels"
     # is not a valid key), so skip ticklabels for minor ticks.
