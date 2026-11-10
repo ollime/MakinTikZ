@@ -578,6 +578,9 @@ class MyAxes:
             msg = f"Orientation must be either 'horizontal' or 'vertical', but is '{orientation}'."
             raise ValueError(msg)
 
+        if self.data.strict:
+            print(self._get_colorbar_location(colorbar))
+
         mycolormap, is_custom_cmap = _mpl_cmap2pgf_cmap(colorbar.mappable.get_cmap(), self.data)
         if is_custom_cmap:
             self.data.current_axis_options.add("colormap=" + mycolormap)
@@ -592,6 +595,24 @@ class MyAxes:
             self.data.current_axis_options.add(
                 "colorbar style={{{}}}".format(",".join(colorbar_styles))
             )
+
+    def _get_colorbar_location(self, colorbar: Colormap):
+        ax = self.obj
+        fig = ax.get_figure()
+        fig.canvas.draw()
+
+        parent = ax.get_position()
+        cbar = colorbar.ax.get_position()
+
+        if cbar.y0 >= parent.y1:
+            print("top")
+        if cbar.y1 <= parent.y0:
+            print("bottom")
+        if cbar.x1 <= parent.x0:
+            print("left")
+        if cbar.x0 >= parent.x1:
+            print("right")
+
 
     def _content_end(self) -> None:
         if self.is_subplot:
