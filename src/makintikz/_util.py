@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING
 import matplotlib.transforms
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection
+from matplotlib.lines import Line2D
 
 if TYPE_CHECKING:
     from matplotlib.artist import Artist
     from matplotlib.legend import Legend
-    from matplotlib.lines import Line2D
     from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -69,6 +70,13 @@ def _match_direct_or_labeled_handle(
     for handle, ax_label in zip(ax_handles, ax_labels, strict=True):
         if handle is obj:
             return ax_label
+
+    if isinstance(obj, PathCollection):
+        facecolors = np.asarray(obj.get_facecolor())[:, :-1]
+        for h in leg_handles:
+            if not isinstance(h, Line2D) or h.get_color() not in facecolors:
+                return None
+        return "PathCollection"
 
     return None
 

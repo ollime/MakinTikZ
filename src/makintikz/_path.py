@@ -399,11 +399,35 @@ def draw_pathcollection(data: TikzData, obj: PathCollection) -> list[str]:
 
         content.append("};\n")
 
-    if path_collection_data.legend_text is not None:
-        content.append(
-            f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
-        )
+    return draw_pathcollection_legend(path_collection_data, content)
 
+
+def draw_pathcollection_legend(
+    path_collection_data: PathCollectionData, content: list[str]
+) -> list[str]:
+    if path_collection_data.legend_text is not None:
+        if path_collection_data.legend_text == "PathCollection":
+            content.append(
+                f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
+            )
+            unique_colors = np.unique(path_collection_data.obj.get_facecolor(), axis=0)
+            for rgba in unique_colors:
+                r, g, b, _ = rgba * 255
+                content.append(
+                    f"\\addlegendimage{{\n"
+                    f"  only marks,\n"
+                    f"  mark=*,\n"
+                    f"  mark size=3.38513750128654pt,\n"
+                    f"  mark options={{fill={{rgb,255:red,{r};green,{g};blue,{b}}}}}\n"
+                    f"}}\n"
+                )
+                content.append(
+                    f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
+                )
+        else:
+            content.append(
+                f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
+            )
     return content
 
 
@@ -560,7 +584,9 @@ def _draw_pathcollection_drawoptions(
     pcd.draw_options.extend(get_draw_options(data, line_data))
 
     pcd.legend_text = get_legend_text(pcd.obj)
-    if pcd.legend_text is None and has_legend(pcd.obj.axes):
+    if (pcd.legend_text is None or pcd.legend_text == "PathCollection") and has_legend(
+        pcd.obj.axes
+    ):
         pcd.draw_options.append("forget plot")
 
 
