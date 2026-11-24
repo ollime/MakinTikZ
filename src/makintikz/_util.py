@@ -71,6 +71,8 @@ def _match_direct_or_labeled_handle(
         if handle is obj:
             return ax_label
 
+    # Handles certain seaborn plots by mapping the legend colors to the
+    # colors in legend_handles
     if isinstance(obj, PathCollection):
         facecolors = np.asarray(obj.get_facecolor())[:, :-1]
         for h in leg_handles:
