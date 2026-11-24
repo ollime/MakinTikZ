@@ -407,9 +407,6 @@ def draw_pathcollection_legend(
 ) -> list[str]:
     if path_collection_data.legend_text is not None:
         if path_collection_data.legend_text == "PathCollection":
-            content.append(
-                f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
-            )
             unique_colors = np.unique(path_collection_data.obj.get_facecolor(), axis=0)
             for rgba in unique_colors:
                 r, g, b, _ = rgba * 255
