@@ -6,11 +6,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.dates import DateConverter, num2date
 from matplotlib.lines import Line2D, _get_dash_pattern  # type: ignore[attr-defined]
 from matplotlib.markers import MarkerStyle
 from matplotlib.patches import Circle, Ellipse, Rectangle
 from matplotlib.path import Path
+from matplotlib.text import Text
 
 if TYPE_CHECKING:
     from matplotlib.collections import Collection, PathCollection
@@ -22,7 +24,13 @@ from . import _color, _files
 from ._axes import _mpl_cmap2pgf_cmap
 from ._hatches import _mpl_hatch2pgfp_pattern
 from ._markers import _mpl_marker2pgfp_marker
-from ._util import _common_texification, get_legend_text, has_legend
+from ._util import (
+    _common_texification,
+    _find_legend,
+    _get_legend_handles,
+    get_legend_text,
+    has_legend,
+)
 
 
 @dataclass
@@ -399,32 +407,56 @@ def draw_pathcollection(data: TikzData, obj: PathCollection) -> list[str]:
 
         content.append("};\n")
 
-    return draw_pathcollection_legend(path_collection_data, content)
+    return draw_pathcollection_legend(data, obj, path_collection_data, content)
 
 
 def draw_pathcollection_legend(
-    path_collection_data: PathCollectionData, content: list[str]
+    data: TikzData, obj: PathCollection, pcd: PathCollectionData, content: list[str]
 ) -> list[str]:
-    if path_collection_data.legend_text is not None:
-        if path_collection_data.legend_text == "PathCollection":
-            unique_colors = np.unique(path_collection_data.obj.get_facecolor(), axis=0)
-            for rgba in unique_colors:
-                r, g, b, _ = rgba * 255
+    if pcd.legend_text is not None:
+        if pcd.legend_text == "PathCollection":
+            leg = _find_legend(obj.axes) if isinstance(obj.axes, Axes) else None
+            if leg is None:
+                content.append(f"\\addlegendentry{{{_common_texification(pcd.legend_text)}}}\n")
+                return content
+            leg_handles = _get_legend_handles(leg)
+
+            # Handles marker size, style, and options
+            sizes = pcd.obj.get_sizes()
+            size = float(sizes.flat[0])
+            ff = data.float_format
+            radius_pt = np.sqrt(size / np.pi)
+            if pcd.marker is not None:
+                pgfplots_marker, marker_options_list = _mpl_marker2pgfp_marker(
+                    data, pcd.marker, is_filled=pcd.is_filled
+                )
+                marker_options = "".join(marker_options_list)
+            else:
+                pgfplots_marker = "*"
+                marker_options = ""
+
+            # Each pair of handles and labels get a legend image and legend entry
+            for handle, text in zip(leg_handles, leg.texts, strict=True):
+                if handle is None:
+                    continue
+                if isinstance(handle, (Line2D, Text)):
+                    _, rgba = _color.mpl_color2xcolor(data, handle.get_color())
+                    r, g, b = float(rgba[0]), float(rgba[1]), float(rgba[2])
+                else:
+                    r, g, b = 0.0, 0.0, 0.0
+
                 content.append(
                     f"\\addlegendimage{{\n"
                     f"  only marks,\n"
-                    f"  mark=*,\n"
-                    f"  mark size=3.38513750128654pt,\n"
-                    f"  mark options={{fill={{rgb,255:red,{r};green,{g};blue,{b}}}}}\n"
+                    f"  mark={pgfplots_marker},\n"
+                    f"  mark size={radius_pt:{ff}}pt,\n"
+                    f"  mark options={{fill={{rgb,1:red,{r};green,{g};blue,{b}}},"
+                    f"{marker_options}}}\n"
                     f"}}\n"
                 )
-                content.append(
-                    f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
-                )
+                content.append(f"\\addlegendentry{{{_common_texification(text.get_text())}}}\n")
         else:
-            content.append(
-                f"\\addlegendentry{{{_common_texification(path_collection_data.legend_text)}}}\n"
-            )
+            content.append(f"\\addlegendentry{{{_common_texification(pcd.legend_text)}}}\n")
     return content
 
 
